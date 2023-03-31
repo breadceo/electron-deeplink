@@ -1,4 +1,7 @@
 {
+  "variables": {
+    "openssl_flips": ""
+  },
   "targets": [{
     "target_name": "electron-deeplink",
     "sources": [ ],
