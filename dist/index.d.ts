@@ -4,7 +4,6 @@ import { EventEmitter } from 'events';
 interface DeeplinkConfig {
     protocol: string;
     app: App;
-    mainWindow: BrowserWindow;
     isDev?: boolean;
     debugLogging?: boolean;
     electronPath?: string;
@@ -26,5 +25,6 @@ declare class Deeplink extends EventEmitter {
     restoreInfoPlist: () => void;
     getProtocol: () => string;
     getLogfile: () => any;
+    setMainWindow(mainWindow: BrowserWindow): void;
 }
 export { Deeplink };

@@ -35,8 +35,9 @@ var Deeplink = /** @class */ (function (_super) {
     __extends(Deeplink, _super);
     function Deeplink(config) {
         var _this = _super.call(this) || this;
+        _this.mainWindow = null;
         _this.checkConfig = function (config) {
-            var expectedKeys = ['app', 'mainWindow', 'protocol'];
+            var expectedKeys = ['app', 'protocol'];
             var configKeys = Object.keys(config);
             var missingKeys = expectedKeys.filter(function (expectedKey) {
                 return !configKeys.includes(expectedKey);
@@ -109,11 +110,10 @@ var Deeplink = /** @class */ (function (_super) {
         _this.getLogfile = function () {
             return _this.logger ? _this.logger.transports.file.getFile().path : 'debugLogging is disabled';
         };
-        var app = config.app, mainWindow = config.mainWindow, protocol = config.protocol, _a = config.isDev, isDev = _a === void 0 ? false : _a, _b = config.debugLogging, debugLogging = _b === void 0 ? false : _b, _c = config.electronPath, electronPath = _c === void 0 ? '/node_modules/electron/dist/Electron.app' : _c;
+        var app = config.app, protocol = config.protocol, _a = config.isDev, isDev = _a === void 0 ? false : _a, _b = config.debugLogging, debugLogging = _b === void 0 ? false : _b, _c = config.electronPath, electronPath = _c === void 0 ? '/node_modules/electron/dist/Electron.app' : _c;
         _this.checkConfig(config);
         _this.config = { protocol: protocol, debugLogging: debugLogging, isDev: isDev, electronPath: electronPath };
         _this.app = app;
-        _this.mainWindow = mainWindow;
         if (debugLogging) {
             _this.logger = require('electron-log');
             _this.logger.transports.file.level = 'debug';
@@ -143,12 +143,24 @@ var Deeplink = /** @class */ (function (_super) {
             });
         }
         else {
-            var args = process.argv[1] ? [path_1.default.resolve(process.argv[1])] : [];
-            app.setAsDefaultProtocolClient(protocol, process.execPath, args);
+            if (_this.config.isDev) {
+                // "cmd.exe" /s /q /k cd /d C:\Users\zigbang\Documents\GitHub\metapolis-launcher\ & .\node_modules\electron\dist\electron.exe -r ts-node/register/transpile-only .\src\main\main.ts "%1"
+                var temp = process.execPath.split('\\node_modules');
+                var pwd = temp[0];
+                var args = "/s /q /k cd /d " + pwd + " & .\\node_modules" + temp[1] + " -r ts-node/register/transpile-only ./src/main/main.ts";
+                app.setAsDefaultProtocolClient(protocol, "cmd.exe", [args]);
+            }
+            else {
+                var args_1 = process.argv[1] ? [path_1.default.resolve(process.argv[1])] : [];
+                app.setAsDefaultProtocolClient(protocol, process.execPath, args_1);
+            }
         }
         app.on('second-instance', _this.secondInstanceEvent);
         return _this;
     }
+    Deeplink.prototype.setMainWindow = function (mainWindow) {
+        this.mainWindow = mainWindow;
+    };
     return Deeplink;
 }(events_1.EventEmitter));
 exports.Deeplink = Deeplink;
