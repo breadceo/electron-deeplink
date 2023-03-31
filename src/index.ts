@@ -17,7 +17,6 @@ declare const process: Process;
 interface DeeplinkConfig {
     protocol: string;
     app: App;
-    mainWindow: BrowserWindow;
     isDev?: boolean;
     debugLogging?: boolean;
     electronPath?: string;
@@ -37,18 +36,17 @@ class Deeplink extends EventEmitter {
     private infoPlistFileBak?: string;
     private logger?: any;
     private app: App;
-    private mainWindow: BrowserWindow;
+    private mainWindow: BrowserWindow | null = null;
     private config: InstanceConfig;
 
     constructor(config: DeeplinkConfig) {
         super();
-        const { app, mainWindow, protocol, isDev = false, debugLogging = false, electronPath = '/node_modules/electron/dist/Electron.app' } = config;
+        const { app, protocol, isDev = false, debugLogging = false, electronPath = '/node_modules/electron/dist/Electron.app' } = config;
 
         this.checkConfig(config);
 
         this.config = { protocol, debugLogging, isDev, electronPath };
         this.app = app;
-        this.mainWindow = mainWindow;
 
         if (debugLogging) {
             this.logger = require('electron-log');
@@ -86,9 +84,16 @@ class Deeplink extends EventEmitter {
                 app.on('open-file', (event, url) => this.darwinOpenEvent(event, url, 'open-file'));
             });
         } else {
-            const args = process.argv[1] ? [path.resolve(process.argv[1])] : [];
-            
-            app.setAsDefaultProtocolClient(protocol, process.execPath, args);
+            if (this.config.isDev) {
+                // "cmd.exe" /s /q /k cd /d C:\Users\zigbang\Documents\GitHub\metapolis-launcher\ & .\node_modules\electron\dist\electron.exe -r ts-node/register/transpile-only .\src\main\main.ts "%1"
+                const temp = process.execPath.split('\\node_modules');
+                const pwd = temp[0];
+                var args = `/s /q /k cd /d ${pwd} & .\\node_modules${temp[1]} -r ts-node/register/transpile-only ./src/main/main.ts`;
+                app.setAsDefaultProtocolClient(protocol, "cmd.exe", [args]);
+            } else {
+                const args = process.argv[1] ? [path.resolve(process.argv[1])] : [];
+                app.setAsDefaultProtocolClient(protocol, process.execPath, args);
+            }
         } 
 
         app.on('second-instance', this.secondInstanceEvent);
@@ -188,6 +193,10 @@ class Deeplink extends EventEmitter {
     public getLogfile = () => {
         return this.logger ? this.logger.transports.file.getFile().path : 'debugLogging is disabled';
     };
+
+    public setMainWindow(mainWindow: BrowserWindow) {
+        this.mainWindow = mainWindow;
+    }
 }
 
 export { Deeplink };
